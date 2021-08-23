@@ -59,6 +59,6 @@ public class StructuredSender implements MessageSender {
 			sourceId = "-";
 		}
 		
-		syslog.log(level, new StructuredSyslogMessage(msgId, sourceId, sd, FullSender.dumpMessage(msg)));
+		syslog.log(level, new StructuredSyslogMessage(msgId, sourceId, sd, msg.getMessage()));
 	}
 }
