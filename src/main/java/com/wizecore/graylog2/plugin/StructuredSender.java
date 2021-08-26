@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 import org.graylog2.plugin.Message;
 import org.graylog2.syslog4j.SyslogIF;
 import org.graylog2.syslog4j.impl.message.structured.StructuredSyslogMessage;
+import org.graylog2.plugin.configuration.Configuration;
 
 /**
  * https://tools.ietf.org/html/rfc5424
@@ -19,6 +20,14 @@ import org.graylog2.syslog4j.impl.message.structured.StructuredSyslogMessage;
  */
 public class StructuredSender implements MessageSender {
 	private Logger log = Logger.getLogger(StructuredSender.class.getName());
+        private boolean utf8bom = false;
+
+        public StructuredSender() {
+        }
+
+        public StructuredSender(Configuration conf) {
+                utf8bom = conf.getBoolean("utf8");
+        }
 
 	@Override
 	public void send(SyslogIF syslog, int level, Message msg) {		
@@ -58,7 +67,11 @@ public class StructuredSender implements MessageSender {
 		if (sourceId == null) {
 			sourceId = "-";
 		}
-		
-		syslog.log(level, new StructuredSyslogMessage(msgId, sourceId, sd, msg.getMessage()));
+
+                String m = msg.getMessage();
+                if(utf8bom) {
+                        m = new String(SyslogOutput.BOM) + m;
+                }
+		syslog.log(level, new StructuredSyslogMessage(msgId, sourceId, sd, m));
 	}
 }

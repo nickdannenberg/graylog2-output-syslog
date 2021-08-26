@@ -62,10 +62,10 @@ public class SyslogOutput implements MessageOutput {
 				return new SnareWindowsSender();
 			} else
 			if (fmt == null || fmt.equalsIgnoreCase("structured")) {
-				return new StructuredSender();
+				return new StructuredSender(conf);
 			} else
 			if (fmt == null || fmt.equalsIgnoreCase("full")) {
-				return new FullSender();
+				return new FullSender(conf);
 			} else
 			if (fmt == null || fmt.equalsIgnoreCase("cef")) {
 				return new CEFSender();
@@ -144,29 +144,38 @@ public class SyslogOutput implements MessageOutput {
 		config.setTruncateMessage(true);
 
 		String hash = protocol + "_" + host + "_" + port + "_" + format;
-		syslog = Syslog.exists(hash) ? Syslog.getInstance(hash) : Syslog.createInstance(hash, config);
+                syslog = Syslog.exists(hash) ? Syslog.getInstance(hash) : Syslog.createInstance(hash, config);
 
 		boolean utf8 = conf.getBoolean("utf8");
 		if (utf8) {
-			syslog.setMessageProcessor(new SyslogMessageProcessor() {
-				public byte[] createPacketData(byte[] header, byte[] message, int start, int length, byte[] splitBeginText, byte[] splitEndText) {
-					byte[] buf = super.createPacketData(header, message, start, length, splitBeginText, splitEndText);
-					byte[] newBuf = new byte[buf.length + BOM.length];
-					System.arraycopy(BOM, 0, newBuf, 0, BOM.length);
-					System.arraycopy(buf, 0, newBuf, BOM.length, buf.length);
-					return newBuf;
-				}
-			});
+                    // UTF-8 BOM must be added to start of message (ie
+                    // after syslog header and
+                    // structured-data). Adding the BOM to the start
+                    // of the syslog packet is wrong.
+                    //
+                    // pass the config when creating
+                    // RFC5424-compatible Senders, so they can check
+                    // this flag and prepend the BOM to the message.
 
-			syslog.setStructuredMessageProcessor(new StructuredSyslogMessageProcessor() {
-				public byte[] createPacketData(byte[] header, byte[] message, int start, int length, byte[] splitBeginText, byte[] splitEndText) {
-					byte[] buf = super.createPacketData(header, message, start, length, splitBeginText, splitEndText);
-					byte[] newBuf = new byte[buf.length + BOM.length];
-					System.arraycopy(BOM, 0, newBuf, 0, BOM.length);
-					System.arraycopy(buf, 0, newBuf, BOM.length, buf.length);
-					return newBuf;
-				}
-			});
+			// syslog.setMessageProcessor(new SyslogMessageProcessor() {
+			// 	public byte[] createPacketData(byte[] header, byte[] message, int start, int length, byte[] splitBeginText, byte[] splitEndText) {
+			// 		byte[] buf = super.createPacketData(header, message, start, length, splitBeginText, splitEndText);
+			// 		byte[] newBuf = new byte[buf.length + BOM.length];
+			// 		System.arraycopy(BOM, 0, newBuf, 0, BOM.length);
+			// 		System.arraycopy(buf, 0, newBuf, BOM.length, buf.length);
+			// 		return newBuf;
+			// 	}
+			// });
+
+			// syslog.setStructuredMessageProcessor(new StructuredSyslogMessageProcessor() {
+			// 	public byte[] createPacketData(byte[] header, byte[] message, int start, int length, byte[] splitBeginText, byte[] splitEndText) {
+			// 		byte[] buf = super.createPacketData(header, message, start, length, splitBeginText, splitEndText);
+			// 		byte[] newBuf = new byte[buf.length + BOM.length];
+			// 		System.arraycopy(BOM, 0, newBuf, 0, BOM.length);
+			// 		System.arraycopy(buf, 0, newBuf, BOM.length, buf.length);
+			// 		return newBuf;
+			// 	}
+			// });
 		}
 
 		sender = createSender(format, conf);
