@@ -64,6 +64,9 @@ public class SyslogOutput implements MessageOutput {
 			if (fmt == null || fmt.equalsIgnoreCase("structured")) {
 				return new StructuredSender(conf);
 			} else
+                        if (fmt == null || fmt.equalsIgnoreCase("transparent+structured")) {
+				return new TransparentStructuredSender(conf);
+                        } else
 			if (fmt == null || fmt.equalsIgnoreCase("full")) {
 				return new FullSender(conf);
 			} else
@@ -315,6 +318,7 @@ public class SyslogOutput implements MessageOutput {
 			types.put("cef", "cef");
 			types.put("full", "full");
 			types.put("transparent", "transparent");
+                        types.put("transparent+structured", "Structuted-data transparent mode (most fields copied from source message)");
 			types.put("snare", "snare");
 
 			// Make immutable map from types
